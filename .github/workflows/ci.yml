@@ -1,4 +1,4 @@
-name: Node.js
+name: ci
 on:
   push:
     branches:
@@ -12,17 +12,24 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [12.x]
-    name: ${{ matrix.name }}
+        node-version: [18, 20, 22]
+      fail-fast: false
+    name: Test Node ${{ matrix.node-version }}
     steps:
-    - uses: actions/checkout@v2
+    - name: Fix usage of insecure GitHub protocol
+      run: sudo git config --system url."https://github".insteadOf "git://github"
+    - uses: actions/checkout@v3
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ matrix.node-version }}
+        cache: 'npm'
     - name: Install Dependancies
       run: npm install
     - name: Check Linting
       run: npm run lint
     - name: Run Tests
       run: npm run test
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
